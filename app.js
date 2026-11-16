@@ -1009,8 +1009,6 @@ async function checkout() {
         }
 
 
-        // Convert USDT to smallest units.
-        // 1 USDT = 1,000,000 units.
         const usdtUnits =
             Math.round(
                 estimatedUSDT *
@@ -1216,15 +1214,6 @@ async function sendUSDTPayment(
         );
 
 
-        /*
-         * TON Connect structured Jetton transaction.
-         *
-         * USDT master:
-         * EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs
-         *
-         * USDT uses 6 decimals.
-         */
-
         const transaction = {
 
             validUntil:
@@ -1253,7 +1242,6 @@ async function sendUSDTPayment(
                             usdtUnits
                         ),
 
-                    // 0.05 TON for Jetton transaction fees
                     attachAmount:
                         "50000000",
 
@@ -1477,9 +1465,89 @@ document.addEventListener(
     "DOMContentLoaded",
     function() {
 
+        // Initial cart update
         updateCart();
 
+        // TON Connect
         initializeTONConnect();
+
+
+        // ==================================
+        // CART BUTTON
+        // ==================================
+
+        const cartButton =
+            document.getElementById(
+                "cartButton"
+            );
+
+
+        if (cartButton) {
+
+            cartButton.addEventListener(
+                "click",
+                openCart
+            );
+
+        } else {
+
+            console.error(
+                "Cart button not found."
+            );
+
+        }
+
+
+        // ==================================
+        // CLOSE CART BUTTON
+        // ==================================
+
+        const closeCartButton =
+            document.getElementById(
+                "closeCartButton"
+            );
+
+
+        if (closeCartButton) {
+
+            closeCartButton.addEventListener(
+                "click",
+                closeCart
+            );
+
+        } else {
+
+            console.error(
+                "Close cart button not found."
+            );
+
+        }
+
+
+        // ==================================
+        // CHECKOUT BUTTON
+        // ==================================
+
+        const checkoutButton =
+            document.getElementById(
+                "checkoutButton"
+            );
+
+
+        if (checkoutButton) {
+
+            checkoutButton.addEventListener(
+                "click",
+                checkout
+            );
+
+        } else {
+
+            console.error(
+                "Checkout button not found."
+            );
+
+        }
 
     }
 );
