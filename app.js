@@ -4,6 +4,7 @@ let cart = [];
 const telegram = window.Telegram?.WebApp;
 
 let tonConnectUI = null;
+let checkoutInProgress = false;
 
 
 /*
@@ -17,7 +18,7 @@ if (telegram) {
 
 
 /*
- * Initialize TON Connect with a custom visible button
+ * Initialize TON Connect
  */
 
 function initializeTONConnect() {
@@ -29,7 +30,6 @@ function initializeTONConnect() {
         return;
     }
 
-    // Create our own visible button
     connectArea.innerHTML = `
         <button
             id="customWalletButton"
@@ -62,8 +62,6 @@ function initializeTONConnect() {
     const button = document.getElementById("customWalletButton");
     const status = document.getElementById("walletStatus");
 
-
-    // Handle wallet button click
     button.addEventListener("click", async () => {
 
         if (!tonConnectUI) {
@@ -72,12 +70,10 @@ function initializeTONConnect() {
                 "TON Connect library is not available. Please reload the shop.";
 
             status.style.color = "#f87171";
-
             return;
         }
 
         try {
-
             await tonConnectUI.openModal();
 
         } catch (error) {
@@ -91,8 +87,6 @@ function initializeTONConnect() {
         }
     });
 
-
-    // Check whether the library loaded
     if (!window.TON_CONNECT_UI) {
 
         status.textContent =
@@ -101,14 +95,11 @@ function initializeTONConnect() {
         status.style.color = "#f87171";
 
         console.error("TON_CONNECT_UI is not available.");
-
         return;
     }
 
-
     try {
 
-        // Initialize TON Connect without its automatic button
         tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
 
             manifestUrl:
@@ -116,8 +107,6 @@ function initializeTONConnect() {
 
         });
 
-
-        // Monitor wallet connection
         tonConnectUI.onStatusChange(wallet => {
 
             if (wallet) {
@@ -135,7 +124,6 @@ function initializeTONConnect() {
                 status.style.color = "#22c55e";
 
                 button.textContent = "Wallet Connected";
-
                 button.style.background = "#15803d";
 
                 console.log("Connected wallet:", address);
@@ -147,18 +135,14 @@ function initializeTONConnect() {
             } else {
 
                 status.textContent = "No wallet connected";
-
                 status.style.color = "#94a3b8";
 
                 button.textContent = "Connect TON Wallet";
-
                 button.style.background = "#229ED9";
 
                 console.log("Wallet disconnected");
             }
-
         });
-
 
         console.log("TON Connect initialized.");
 
@@ -189,14 +173,12 @@ function normalizeProductName(name) {
 
 /*
  * Add product to cart
- * Each product can only appear once
  */
 
 function addToCart(name, price) {
 
     const productName = normalizeProductName(name);
 
-    // Check for an existing product
     const existingProduct = cart.find(item =>
         normalizeProductName(item.name) === productName
     );
@@ -214,7 +196,6 @@ function addToCart(name, price) {
         return;
     }
 
-    // Add product once
     cart.push({
         name: name,
         price: price
@@ -243,6 +224,18 @@ function removeFromCart(index) {
 
 
 /*
+ * Calculate cart total
+ */
+
+function getCartTotal() {
+
+    return cart.reduce((total, item) => {
+        return total + Number(item.price);
+    }, 0);
+}
+
+
+/*
  * Update cart display
  */
 
@@ -257,9 +250,7 @@ function updateCart() {
     const totalElement =
         document.getElementById("cartTotal");
 
-
     countElement.textContent = cart.length;
-
 
     if (cart.length === 0) {
 
@@ -274,18 +265,11 @@ function updateCart() {
         `;
 
         totalElement.textContent = "0 UGX";
-
         return;
     }
 
-
-    let total = 0;
-
-
     itemsElement.innerHTML = cart
         .map((item, index) => {
-
-            total += item.price;
 
             return `
                 <div class="cart-item">
@@ -312,9 +296,138 @@ function updateCart() {
         })
         .join("");
 
-
     totalElement.textContent =
-        formatUGX(total);
+        formatUGX(getCartTotal());
+}
+
+
+/*
+ * Add required exchange-rate attribution
+ */
+
+function addRateAttribution() {
+
+    if (document.getElementById("rateAttribution")) {
+        return;
+    }
+
+    const totalElement =
+        document.getElementById("cartTotal");
+
+    if (!totalElement) return;
+
+    const link = document.createElement("a");
+
+    link.id = "rateAttribution";
+    link.href = "https://www.exchangerate-api.com";
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+
+    link.textContent = "Rates By Exchange Rate API";
+
+    link.style.display = "block";
+    link.style.marginTop = "8px";
+    link.style.fontSize = "11px";
+    link.style.color = "#94a3b8";
+
+    totalElement.insertAdjacentElement("afterend", link);
+}
+
+
+/*
+ * Fetch UGX exchange rate
+ */
+
+async function getUSDTExchangeRate() {
+
+    const response = await fetch(
+        "https://open.er-api.com/v6/latest/USD",
+        {
+            cache: "no-store"
+        }
+    );
+
+    if (!response.ok) {
+        throw new Error("Exchange rate request failed.");
+    }
+
+    const data = await response.json();
+
+    if (
+        data.result !== "success" ||
+        !data.rates ||
+        !Number.isFinite(data.rates.UGX) ||
+        data.rates.UGX <= 0
+    ) {
+        throw new Error("Invalid exchange rate received.");
+    }
+
+    return {
+        ugxPerUSD: data.rates.UGX,
+        updatedAt: data.time_last_update_utc || "Unknown"
+    };
+}
+
+
+/*
+ * Checkout with automatic UGX to USDT estimate
+ */
+
+async function checkout() {
+
+    if (cart.length === 0) {
+
+        showMessage("Your cart is empty.");
+        return;
+    }
+
+    if (checkoutInProgress) {
+        return;
+    }
+
+    checkoutInProgress = true;
+
+    const totalUGX = getCartTotal();
+
+    try {
+
+        showMessage(
+            "Getting the latest available exchange rate. Please wait."
+        );
+
+        const exchange = await getUSDTExchangeRate();
+
+        const estimatedUSDT =
+            totalUGX / exchange.ugxPerUSD;
+
+        const formattedUSDT =
+            estimatedUSDT.toFixed(2);
+
+        addRateAttribution();
+
+        showMessage(
+            "YOUR ORDER SUMMARY\n\n" +
+            "Total: " + formatUGX(totalUGX) +
+            "\nEstimated payment: " + formattedUSDT + " USDT" +
+            "\n\nExchange rate: 1 USD = " +
+            formatUGX(exchange.ugxPerUSD) +
+            "\nRate updated: " + exchange.updatedAt +
+            "\n\nThis is an estimate only. No payment has been sent or received yet."
+        );
+
+    } catch (error) {
+
+        console.error("Currency conversion error:", error);
+
+        showMessage(
+            "We could not retrieve the exchange rate.\n\n" +
+            "Please try checkout again later. No payment has been made."
+        );
+
+    } finally {
+
+        checkoutInProgress = false;
+    }
 }
 
 
@@ -341,35 +454,6 @@ function closeCart() {
     document
         .getElementById("cart")
         .classList.add("hidden");
-}
-
-
-/*
- * Checkout
- */
-
-function checkout() {
-
-    if (cart.length === 0) {
-
-        showMessage("Your cart is empty.");
-
-        return;
-    }
-
-
-    let total = 0;
-
-    cart.forEach(item => {
-        total += item.price;
-    });
-
-
-    showMessage(
-        "Your order is ready for the next payment stage.\n\n" +
-        "Total: " + formatUGX(total) +
-        "\n\nUSDT payments on TON will be added after wallet connection is tested."
-    );
 }
 
 
