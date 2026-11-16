@@ -16,7 +16,7 @@
     <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
 
     <!-- App stylesheet -->
-    <link rel="stylesheet" href="style.css?v=7">
+    <link rel="stylesheet" href="style.css?v=8">
 </head>
 
 <body>
@@ -30,11 +30,11 @@
             <div class="subtitle">Simple • Secure • Fast</div>
         </div>
 
+        <!-- Cart button -->
         <button
             id="cartButton"
             class="cart-button"
-            type="button"
-            onclick="openCart()">
+            type="button">
 
             🛒 <span id="cartCount">0</span>
 
@@ -157,14 +157,16 @@
 
 
         <!-- Shopping cart -->
-        <section id="cart" class="cart hidden">
+        <section
+            id="cart"
+            class="cart hidden">
 
             <div class="cart-header">
 
                 <h2>Your Cart</h2>
 
                 <button
-                    onclick="closeCart()"
+                    id="closeCartButton"
                     class="close-button"
                     type="button">
 
@@ -193,8 +195,7 @@
             <button
                 id="checkoutButton"
                 class="checkout-button"
-                type="button"
-                onclick="checkout()">
+                type="button">
 
                 Continue to Checkout
 
@@ -208,7 +209,7 @@
 
 
 <!-- App JavaScript -->
-<script src="app.js?v=7"></script>
+<script src="app.js?v=8"></script>
 
 </body>
 </html>
