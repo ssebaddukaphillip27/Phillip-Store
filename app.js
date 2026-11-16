@@ -17,7 +17,7 @@ if (telegram) {
 
 
 /*
- * Initialize TON Connect
+ * Initialize TON Connect with a custom visible button
  */
 
 function initializeTONConnect() {
@@ -25,61 +25,99 @@ function initializeTONConnect() {
     const connectArea = document.getElementById("ton-connect");
 
     if (!connectArea) {
-        console.error("TON Connect button container not found.");
+        console.error("TON Connect container not found.");
         return;
     }
 
+    // Create our own visible button
+    connectArea.innerHTML = `
+        <button
+            id="customWalletButton"
+            type="button"
+            style="
+                width:100%;
+                max-width:240px;
+                padding:14px 20px;
+                border:0;
+                border-radius:12px;
+                background:#229ED9;
+                color:white;
+                font-size:15px;
+                font-weight:700;
+                cursor:pointer;
+            ">
+            Connect TON Wallet
+        </button>
+
+        <p id="walletStatus" style="
+            margin-top:10px;
+            color:#94a3b8;
+            font-size:13px;
+            text-align:center;
+        ">
+            No wallet connected
+        </p>
+    `;
+
+    const button = document.getElementById("customWalletButton");
+    const status = document.getElementById("walletStatus");
+
+
+    // Handle wallet button click
+    button.addEventListener("click", async () => {
+
+        if (!tonConnectUI) {
+
+            status.textContent =
+                "TON Connect library is not available. Please reload the shop.";
+
+            status.style.color = "#f87171";
+
+            return;
+        }
+
+        try {
+
+            await tonConnectUI.openModal();
+
+        } catch (error) {
+
+            console.error("Wallet opening error:", error);
+
+            status.textContent =
+                "Could not open wallet selector. Please try again.";
+
+            status.style.color = "#f87171";
+        }
+    });
+
+
+    // Check whether the library loaded
     if (!window.TON_CONNECT_UI) {
-        console.error("TON Connect library failed to load.");
-        connectArea.textContent =
-            "Wallet connection is currently unavailable.";
+
+        status.textContent =
+            "TON Connect library failed to load.";
+
+        status.style.color = "#f87171";
+
+        console.error("TON_CONNECT_UI is not available.");
+
         return;
     }
+
 
     try {
 
+        // Initialize TON Connect without its automatic button
         tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
 
             manifestUrl:
-                "https://ssebaddukaphillip27.github.io/Phillip-Store/tonconnect-manifest.json",
-
-            buttonRootId: "ton-connect"
+                "https://ssebaddukaphillip27.github.io/Phillip-Store/tonconnect-manifest.json"
 
         });
 
 
-        /*
-         * Create wallet status display
-         */
-
-        let statusElement =
-            document.getElementById("walletStatus");
-
-        if (!statusElement) {
-
-            statusElement = document.createElement("p");
-
-            statusElement.id = "walletStatus";
-
-            statusElement.style.cssText = `
-                text-align: center;
-                color: #94a3b8;
-                font-size: 13px;
-                margin-top: 10px;
-                word-break: break-word;
-            `;
-
-            connectArea.insertAdjacentElement(
-                "afterend",
-                statusElement
-            );
-        }
-
-
-        /*
-         * Monitor wallet connection
-         */
-
+        // Monitor wallet connection
         tonConnectUI.onStatusChange(wallet => {
 
             if (wallet) {
@@ -91,39 +129,47 @@ function initializeTONConnect() {
                     "..." +
                     address.slice(-6);
 
-                statusElement.textContent =
-                    "✓ Wallet connected: " + shortAddress;
+                status.textContent =
+                    "✓ Connected: " + shortAddress;
 
-                statusElement.style.color = "#22c55e";
+                status.style.color = "#22c55e";
 
-                console.log("TON wallet connected:", address);
+                button.textContent = "Wallet Connected";
+
+                button.style.background = "#15803d";
+
+                console.log("Connected wallet:", address);
 
                 if (telegram) {
-                    telegram.HapticFeedback?.notificationOccurred(
-                        "success"
-                    );
+                    telegram.HapticFeedback?.notificationOccurred("success");
                 }
 
             } else {
 
-                statusElement.textContent =
-                    "No wallet connected";
+                status.textContent = "No wallet connected";
 
-                statusElement.style.color = "#94a3b8";
+                status.style.color = "#94a3b8";
 
-                console.log("TON wallet disconnected");
+                button.textContent = "Connect TON Wallet";
+
+                button.style.background = "#229ED9";
+
+                console.log("Wallet disconnected");
             }
 
         });
 
-        console.log("TON Connect initialized successfully.");
+
+        console.log("TON Connect initialized.");
 
     } catch (error) {
 
         console.error("TON Connect initialization error:", error);
 
-        connectArea.textContent =
-            "Could not initialize wallet connection.";
+        status.textContent =
+            "Wallet initialization failed. Check the manifest.";
+
+        status.style.color = "#f87171";
     }
 }
 
@@ -263,9 +309,6 @@ function closeCart() {
 
 /*
  * Checkout
- *
- * Payment will be added in Stage 4.
- * No money is transferred here.
  */
 
 function checkout() {
@@ -353,7 +396,7 @@ updateCart();
 
 
 /*
- * Start TON Connect after page loads
+ * Initialize wallet connection
  */
 
 initializeTONConnect();
