@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
     <meta charset="UTF-8">
 
     <meta name="viewport"
@@ -9,72 +11,126 @@
 
     <title>Phillip Store</title>
 
+
     <!-- Telegram Mini App -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
 
     <!-- TON Connect UI -->
     <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
 
+
     <!-- App stylesheet -->
-    <link rel="stylesheet" href="style.css?v=8">
+    <link rel="stylesheet" href="style.css?v=9">
+
 </head>
+
 
 <body>
 
+
 <div class="app">
+
+
+    <!-- ============================== -->
+    <!-- TOP BAR -->
+    <!-- ============================== -->
 
     <header class="topbar">
 
         <div>
-            <div class="brand">Phillip Store</div>
-            <div class="subtitle">Simple • Secure • Fast</div>
+
+            <div class="brand">
+                Phillip Store
+            </div>
+
+            <div class="subtitle">
+                Simple • Secure • Fast
+            </div>
+
         </div>
 
+
         <!-- Cart button -->
+
         <button
             id="cartButton"
             class="cart-button"
             type="button">
 
-            🛒 <span id="cartCount">0</span>
+            🛒
+
+            <span id="cartCount">
+                0
+            </span>
 
         </button>
 
     </header>
 
 
+
     <main>
 
-        <!-- Welcome section -->
+
+        <!-- ============================== -->
+        <!-- WELCOME -->
+        <!-- ============================== -->
+
         <section class="welcome">
 
-            <h1>Welcome 👋</h1>
+            <h1>
+                Welcome 👋
+            </h1>
 
-            <p>Choose a product below.</p>
+            <p>
+                Choose a product below.
+            </p>
+
 
             <!-- TON wallet connection -->
+
             <div id="ton-connect"></div>
 
         </section>
 
 
-        <!-- Products section -->
-        <section id="products" class="products">
+
+        <!-- ============================== -->
+        <!-- PRODUCTS -->
+        <!-- ============================== -->
+
+        <section
+            id="products"
+            class="products">
+
 
             <!-- T-Shirt -->
+
             <article class="product">
 
-                <div class="product-image">👕</div>
+                <div class="product-image">
+                    👕
+                </div>
+
 
                 <div class="product-info">
 
-                    <h2>T-Shirt</h2>
+                    <h2>
+                        T-Shirt
+                    </h2>
 
-                    <p>Comfortable everyday T-shirt.</p>
+                    <p>
+                        Comfortable everyday T-shirt.
+                    </p>
+
 
                     <div class="product-bottom">
 
-                        <strong>35,000 UGX</strong>
+                        <strong>
+                            35,000 UGX
+                        </strong>
+
 
                         <button
                             class="add-button"
@@ -92,20 +148,33 @@
             </article>
 
 
+
             <!-- Headphones -->
+
             <article class="product">
 
-                <div class="product-image">🎧</div>
+                <div class="product-image">
+                    🎧
+                </div>
+
 
                 <div class="product-info">
 
-                    <h2>Headphones</h2>
+                    <h2>
+                        Headphones
+                    </h2>
 
-                    <p>Wireless headphones for music.</p>
+                    <p>
+                        Wireless headphones for music.
+                    </p>
+
 
                     <div class="product-bottom">
 
-                        <strong>80,000 UGX</strong>
+                        <strong>
+                            80,000 UGX
+                        </strong>
+
 
                         <button
                             class="add-button"
@@ -123,20 +192,33 @@
             </article>
 
 
+
             <!-- Phone Case -->
+
             <article class="product">
 
-                <div class="product-image">📱</div>
+                <div class="product-image">
+                    📱
+                </div>
+
 
                 <div class="product-info">
 
-                    <h2>Phone Case</h2>
+                    <h2>
+                        Phone Case
+                    </h2>
 
-                    <p>Protective phone case.</p>
+                    <p>
+                        Protective phone case.
+                    </p>
+
 
                     <div class="product-bottom">
 
-                        <strong>20,000 UGX</strong>
+                        <strong>
+                            20,000 UGX
+                        </strong>
+
 
                         <button
                             class="add-button"
@@ -153,17 +235,26 @@
 
             </article>
 
+
         </section>
 
 
-        <!-- Shopping cart -->
+
+        <!-- ============================== -->
+        <!-- SHOPPING CART -->
+        <!-- ============================== -->
+
         <section
             id="cart"
             class="cart hidden">
 
+
             <div class="cart-header">
 
-                <h2>Your Cart</h2>
+                <h2>
+                    Your Cart
+                </h2>
+
 
                 <button
                     id="closeCartButton"
@@ -177,21 +268,32 @@
             </div>
 
 
+
             <!-- Cart products -->
+
             <div id="cartItems"></div>
 
 
+
             <!-- Cart total -->
+
             <div class="cart-total">
 
-                <span>Total</span>
+                <span>
+                    Total
+                </span>
 
-                <strong id="cartTotal">0 UGX</strong>
+
+                <strong id="cartTotal">
+                    0 UGX
+                </strong>
 
             </div>
 
 
+
             <!-- Checkout -->
+
             <button
                 id="checkoutButton"
                 class="checkout-button"
@@ -201,15 +303,24 @@
 
             </button>
 
+
         </section>
 
+
     </main>
+
 
 </div>
 
 
-<!-- App JavaScript -->
-<script src="app.js?v=8"></script>
+
+<!-- ============================== -->
+<!-- APP JAVASCRIPT -->
+<!-- ============================== -->
+
+<script src="app.js?v=9"></script>
+
 
 </body>
+
 </html>
