@@ -176,10 +176,24 @@ function initializeTONConnect() {
 
 /*
  * Add product to cart
+ * Each product can only appear once
  */
 
 function addToCart(name, price) {
 
+    // Check whether product already exists
+    const existingProduct = cart.find(
+        item => item.name === name
+    );
+
+    if (existingProduct) {
+
+        showMessage(name + " is already in your cart.");
+
+        return;
+    }
+
+    // Add product only once
     cart.push({
         name: name,
         price: price
@@ -190,6 +204,8 @@ function addToCart(name, price) {
     if (telegram) {
         telegram.HapticFeedback?.impactOccurred("light");
     }
+
+    showMessage(name + " added to your cart.");
 }
 
 
