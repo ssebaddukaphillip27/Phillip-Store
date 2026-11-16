@@ -1,23 +1,45 @@
 // ======================================
 // Phillip Store - app.js
+// Stage 4: USDT payments on TON
 // ======================================
 
 
 // ======================================
-// CART
+// CONFIGURATION
+// ======================================
+
+const RECEIVING_WALLET =
+    "UQD4hsyZoOBXjUxWyJlwZGtcQk-v3VXNdPR3WVlwdyh3qb8N";
+
+const USDT_MASTER =
+    "EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs";
+
+const USDT_DECIMALS = 6;
+
+const TON_NETWORK = "-239"; // TON mainnet
+
+const TON_CONNECT_MANIFEST =
+    "https://ssebaddukaphillip27.github.io/Phillip-Store/tonconnect-manifest.json";
+
+const RATE_CACHE_TIME = 5 * 60 * 1000;
+
+
+// ======================================
+// APP STATE
 // ======================================
 
 let cart = [];
 
 let tonConnectUI = null;
 
-let checkoutInProgress = false;
+let cachedUSDTPerUSD = null;
+let cachedRateTime = 0;
 
-let rateRequestId = 0;
+let checkoutInProgress = false;
 
 
 // ======================================
-// TELEGRAM
+// TELEGRAM MINI APP
 // ======================================
 
 const telegram = window.Telegram?.WebApp;
@@ -29,386 +51,205 @@ if (telegram) {
 
 
 // ======================================
-// OPEN CART
+// HELPERS
 // ======================================
 
-function openCart() {
+function formatUGX(amount) {
+    return Number(amount).toLocaleString("en-UG") + " UGX";
+}
 
-    const cartSection =
-        document.getElementById("cart");
-
-    if (!cartSection) {
-        console.error("Cart element not found.");
-        return;
+function showMessage(message) {
+    if (telegram?.showAlert) {
+        telegram.showAlert(message);
+    } else {
+        alert(message);
     }
+}
 
-    cartSection.classList.remove("hidden");
-
-    console.log("Cart opened.");
+function getWalletAddress() {
+    return tonConnectUI?.wallet?.account?.address || null;
 }
 
 
 // ======================================
-// CLOSE CART
-// ======================================
-
-function closeCart() {
-
-    const cartSection =
-        document.getElementById("cart");
-
-    if (!cartSection) {
-        console.error("Cart element not found.");
-        return;
-    }
-
-    cartSection.classList.add("hidden");
-
-    console.log("Cart closed.");
-}
-
-
-// ======================================
-// ADD TO CART
+// CART
 // ======================================
 
 function addToCart(name, price) {
+    price = Number(price);
 
-    const numericPrice = Number(price);
-
-    if (
-        !Number.isFinite(numericPrice) ||
-        numericPrice <= 0
-    ) {
-        console.error(
-            "Invalid product price:",
-            price
-        );
-
+    if (!name || !Number.isFinite(price) || price <= 0) {
         return;
     }
 
     cart.push({
         name: name,
-        price: numericPrice
+        price: price
     });
 
     updateCart();
-
-    console.log(
-        "Added:",
-        name,
-        numericPrice
-    );
 }
 
-
-// ======================================
-// REMOVE FROM CART
-// ======================================
-
 function removeFromCart(index) {
-
-    if (
-        index < 0 ||
-        index >= cart.length
-    ) {
+    if (index < 0 || index >= cart.length) {
         return;
     }
 
     cart.splice(index, 1);
-
     updateCart();
 }
 
-
-// ======================================
-// UPDATE CART
-// ======================================
-
 function updateCart() {
+    const cartItems = document.getElementById("cartItems");
+    const cartCount = document.getElementById("cartCount");
+    const cartTotal = document.getElementById("cartTotal");
 
-    const cartItems =
-        document.getElementById("cartItems");
+    const total = cart.reduce(
+        (sum, item) => sum + item.price,
+        0
+    );
 
-    const cartCount =
-        document.getElementById("cartCount");
-
-    const cartTotal =
-        document.getElementById("cartTotal");
-
-
-    if (
-        !cartItems ||
-        !cartCount ||
-        !cartTotal
-    ) {
-
-        console.error(
-            "Cart elements missing."
-        );
-
-        return;
+    if (cartCount) {
+        cartCount.textContent = cart.length;
     }
 
+    if (cartTotal) {
+        cartTotal.textContent = formatUGX(total);
+    }
 
-    // ----------------------------------
-    // CART COUNT
-    // ----------------------------------
-
-    cartCount.textContent =
-        cart.length;
-
-
-    // ----------------------------------
-    // EMPTY CART
-    // ----------------------------------
+    if (!cartItems) return;
 
     if (cart.length === 0) {
-
-        cartItems.innerHTML = `
-            <p style="
-                color: var(--muted);
-                text-align: center;
-                padding: 20px 0;
-            ">
-                Your cart is empty.
-            </p>
-        `;
-
-        cartTotal.textContent =
-            "0 UGX";
-
+        cartItems.innerHTML =
+            '<p style="color:#94a3b8;padding:12px 0;">Your cart is empty.</p>';
         return;
     }
 
+    cartItems.innerHTML = cart.map((item, index) => `
+        <div class="cart-item">
 
-    // ----------------------------------
-    // CART ITEMS
-    // ----------------------------------
-
-    cartItems.innerHTML = "";
-
-
-    let total = 0;
-
-
-    cart.forEach(function(item, index) {
-
-        total += Number(item.price);
-
-
-        const itemElement =
-            document.createElement("div");
-
-
-        itemElement.className =
-            "cart-item";
-
-
-        itemElement.innerHTML = `
             <div>
-
                 <div class="cart-item-name">
                     ${item.name}
                 </div>
 
                 <div class="cart-item-price">
-                    ${Number(item.price).toLocaleString()} UGX
+                    ${formatUGX(item.price)}
                 </div>
-
             </div>
 
             <button
                 class="remove-button"
-                type="button">
-
+                type="button"
+                data-remove="${index}">
                 Remove
-
             </button>
-        `;
 
-
-        const removeButton =
-            itemElement.querySelector(
-                ".remove-button"
-            );
-
-
-        removeButton.addEventListener(
-            "click",
-            function() {
-
-                removeFromCart(index);
-
-            }
-        );
-
-
-        cartItems.appendChild(
-            itemElement
-        );
-
-    });
-
-
-    // ----------------------------------
-    // TOTAL
-    // ----------------------------------
-
-    cartTotal.textContent =
-        total.toLocaleString() +
-        " UGX";
-
-
-    console.log(
-        "Cart total:",
-        total,
-        "UGX"
-    );
+        </div>
+    `).join("");
 }
 
 
 // ======================================
-// UGX → USDT
+// OPEN / CLOSE CART
 // ======================================
 
-async function convertUGXToUSDT(
-    ugxAmount
-) {
+function openCart() {
+    document.getElementById("cart")?.classList.remove("hidden");
+}
 
-    const requestId =
-        ++rateRequestId;
-
-
-    try {
-
-        const response =
-            await fetch(
-                "https://open.er-api.com/v6/latest/USD"
-            );
+function closeCart() {
+    document.getElementById("cart")?.classList.add("hidden");
+}
 
 
-        if (!response.ok) {
+// ======================================
+// UGX TO USDT EXCHANGE RATE
+// ======================================
 
-            throw new Error(
-                "Exchange rate request failed."
-            );
+async function getUSDTPerUSD() {
 
-        }
+    const now = Date.now();
 
-
-        const data =
-            await response.json();
-
-
-        if (
-            !data ||
-            !data.rates ||
-            !data.rates.UGX
-        ) {
-
-            throw new Error(
-                "UGX exchange rate unavailable."
-            );
-
-        }
-
-
-        const usdToUGX =
-            Number(data.rates.UGX);
-
-
-        if (
-            !Number.isFinite(usdToUGX) ||
-            usdToUGX <= 0
-        ) {
-
-            throw new Error(
-                "Invalid UGX exchange rate."
-            );
-
-        }
-
-
-        // Convert UGX → USD
-        const usdAmount =
-            Number(ugxAmount) /
-            usdToUGX;
-
-
-        // USDT is treated as approximately
-        // equal to USD for the estimate.
-        const usdtAmount =
-            usdAmount;
-
-
-        if (requestId !== rateRequestId) {
-            return null;
-        }
-
-
-        return usdtAmount;
-
-
-    } catch (error) {
-
-        console.error(
-            "UGX → USDT conversion failed:",
-            error
-        );
-
-        return null;
+    if (
+        cachedUSDTPerUSD &&
+        now - cachedRateTime < RATE_CACHE_TIME
+    ) {
+        return cachedUSDTPerUSD;
     }
+
+    const response = await fetch(
+        "https://open.er-api.com/v6/latest/USD"
+    );
+
+    if (!response.ok) {
+        throw new Error("Could not get the exchange rate.");
+    }
+
+    const data = await response.json();
+
+    if (
+        data.result !== "success" ||
+        !data.rates ||
+        !data.rates.UGX
+    ) {
+        throw new Error("Invalid exchange-rate response.");
+    }
+
+    cachedUSDTPerUSD = Number(data.rates.UGX);
+    cachedRateTime = now;
+
+    return cachedUSDTPerUSD;
+}
+
+
+async function convertUGXToUSDT(ugxAmount) {
+
+    const ugxPerUSD = await getUSDTPerUSD();
+
+    // USDT is estimated at approximately 1 USD.
+    const usdAmount = Number(ugxAmount) / ugxPerUSD;
+
+    return usdAmount;
 }
 
 
 // ======================================
-// TON CONNECT
+// CONFIRM CHECKOUT
 // ======================================
 
-function initializeTONConnect() {
+function askBuyerToPay(message) {
 
-    try {
+    return new Promise((resolve) => {
 
-        if (
-            typeof TON_CONNECT_UI ===
-            "undefined"
-        ) {
+        if (telegram?.showPopup) {
 
-            console.warn(
-                "TON Connect UI library not available."
-            );
-
-            return;
-        }
-
-
-        tonConnectUI =
-            new TON_CONNECT_UI.TonConnectUI({
-
-                manifestUrl:
-                    "https://ssebaddukaphillip27.github.io/Phillip-Store/tonconnect-manifest.json",
-
-                buttonRootId:
-                    "ton-connect"
-
+            telegram.showPopup({
+                title: "Confirm USDT payment",
+                message: message,
+                buttons: [
+                    {
+                        id: "pay",
+                        type: "default",
+                        text: "Pay with USDT"
+                    },
+                    {
+                        id: "cancel",
+                        type: "cancel",
+                        text: "Cancel"
+                    }
+                ]
+            }, (buttonId) => {
+                resolve(buttonId === "pay");
             });
 
+        } else {
 
-        console.log(
-            "TON Connect initialized."
-        );
+            resolve(window.confirm(message));
 
+        }
 
-    } catch (error) {
-
-        console.error(
-            "TON Connect initialization failed:",
-            error
-        );
-
-    }
+    });
 }
 
 
@@ -418,405 +259,344 @@ function initializeTONConnect() {
 
 async function checkout() {
 
-    if (checkoutInProgress) {
-        return;
-    }
-
+    if (checkoutInProgress) return;
 
     if (cart.length === 0) {
+        showMessage("Your cart is empty.");
+        return;
+    }
 
-        alert(
-            "Your cart is empty."
-        );
+    if (!tonConnectUI?.wallet) {
+        showMessage("Please connect your TON wallet first.");
+
+        try {
+            await tonConnectUI?.openModal();
+        } catch (error) {
+            console.error("Wallet connection error:", error);
+        }
 
         return;
     }
 
+    const wallet = tonConnectUI.wallet;
+
+    if (wallet.account.chain !== TON_NETWORK) {
+        showMessage(
+            "Please connect a TON mainnet wallet before paying."
+        );
+        return;
+    }
 
     checkoutInProgress = true;
 
+    const checkoutButton =
+        document.getElementById("checkoutButton");
+
+    if (checkoutButton) {
+        checkoutButton.disabled = true;
+        checkoutButton.textContent = "Calculating...";
+    }
 
     try {
 
-        // ----------------------------------
-        // CALCULATE TOTAL FROM CART
-        // ----------------------------------
-
-        let totalUGX = 0;
-
-
-        cart.forEach(function(item) {
-
-            totalUGX +=
-                Number(item.price);
-
-        });
-
-
-        console.log(
-            "Checkout total:",
-            totalUGX,
-            "UGX"
+        const totalUGX = cart.reduce(
+            (sum, item) => sum + item.price,
+            0
         );
 
+        const usdAmount =
+            await convertUGXToUSDT(totalUGX);
 
-        // ----------------------------------
-        // CONVERT TO USDT
-        // ----------------------------------
-
+        // Round up to the nearest micro-USDT.
         const usdtAmount =
-            await convertUGXToUSDT(
-                totalUGX
-            );
+            Math.ceil(usdAmount * 1000000) / 1000000;
 
-
-        if (
-            usdtAmount === null ||
-            !Number.isFinite(usdtAmount)
-        ) {
-
-            alert(
-                "Unable to get the current USDT exchange rate."
-            );
-
-            checkoutInProgress = false;
-
-            return;
-        }
-
-
-        const formattedUSDT =
-            usdtAmount.toFixed(2);
-
-
-        // ----------------------------------
-        // CHECKOUT MESSAGE
-        // ----------------------------------
+        const orderReference =
+            "PS-" + Date.now().toString();
 
         const message =
-            "Order total: " +
-            totalUGX.toLocaleString() +
-            " UGX\n\n" +
+            "Order: " + orderReference +
+            "\n\nTotal: " + formatUGX(totalUGX) +
+            "\nEstimated payment: " + usdtAmount.toFixed(6) +
+            " USDT" +
+            "\n\nYour wallet will ask you to approve the transaction." +
+            "\n\nA small amount of TON is also needed for network fees.";
 
-            "Estimated payment: " +
-            formattedUSDT +
-            " USDT";
+        const confirmed = await askBuyerToPay(message);
 
+        if (!confirmed) return;
 
-        console.log(
-            "Checkout:",
-            message
+        await startUSDTWalletPayment(
+            usdtAmount,
+            orderReference
         );
-
-
-        // ----------------------------------
-        // TELEGRAM POPUP
-        // ----------------------------------
-
-        if (telegram) {
-
-            telegram.showPopup(
-
-                {
-
-                    title:
-                        "Checkout",
-
-                    message:
-                        message,
-
-                    buttons: [
-
-                        {
-                            id:
-                                "continue",
-
-                            type:
-                                "default",
-
-                            text:
-                                "Continue"
-                        },
-
-                        {
-                            id:
-                                "cancel",
-
-                            type:
-                                "cancel",
-
-                            text:
-                                "Cancel"
-                        }
-
-                    ]
-
-                },
-
-                function(buttonId) {
-
-                    if (
-                        buttonId ===
-                        "continue"
-                    ) {
-
-                        startUSDTWalletPayment(
-                            usdtAmount
-                        );
-
-                    } else {
-
-                        checkoutInProgress =
-                            false;
-
-                    }
-
-                }
-
-            );
-
-        } else {
-
-            const confirmed =
-                confirm(
-                    message +
-                    "\n\nContinue?"
-                );
-
-
-            if (confirmed) {
-
-                await startUSDTWalletPayment(
-                    usdtAmount
-                );
-
-            }
-
-
-            checkoutInProgress =
-                false;
-
-        }
-
 
     } catch (error) {
 
-        console.error(
-            "Checkout error:",
-            error
+        console.error("Checkout error:", error);
+
+        showMessage(
+            "Checkout failed: " +
+            (error.message || "Please try again.")
         );
 
-        alert(
-            "Checkout could not be started."
-        );
+    } finally {
 
-        checkoutInProgress =
-            false;
+        checkoutInProgress = false;
+
+        if (checkoutButton) {
+            checkoutButton.disabled = false;
+            checkoutButton.textContent = "Continue to Checkout";
+        }
+
     }
 }
 
 
 // ======================================
-// START USDT PAYMENT
+// RESOLVE BUYER'S USDT JETTON WALLET
+// ======================================
+
+async function resolveJettonWalletAddress(
+    TonClient,
+    Address,
+    beginCell,
+    buyerAddress
+) {
+
+    const client = new TonClient({
+        endpoint: "https://toncenter.com/api/v2/jsonRPC"
+    });
+
+    const result = await client.runMethod(
+        Address.parse(USDT_MASTER),
+        "get_wallet_address",
+        [
+            {
+                type: "slice",
+                cell: beginCell()
+                    .storeAddress(Address.parse(buyerAddress))
+                    .endCell()
+            }
+        ]
+    );
+
+    const jettonWalletAddress = result.stack.readAddress();
+
+    return jettonWalletAddress.toString({
+        urlSafe: true,
+        bounceable: true
+    });
+}
+
+
+// ======================================
+// SEND REAL USDT PAYMENT
 // ======================================
 
 async function startUSDTWalletPayment(
-    usdtAmount
+    usdtAmount,
+    orderReference
 ) {
+
+    if (!tonConnectUI?.wallet) {
+        throw new Error("Wallet is no longer connected.");
+    }
+
+    const buyerAddress =
+        tonConnectUI.wallet.account.address;
+
+    if (tonConnectUI.wallet.account.chain !== TON_NETWORK) {
+        throw new Error("Your wallet must be on TON mainnet.");
+    }
+
+    // Load the official TON libraries.
+    const core = await import(
+        "https://esm.sh/@ton/core"
+    );
+
+    const ton = await import(
+        "https://esm.sh/@ton/ton"
+    );
+
+    const Address = core.Address;
+    const beginCell = core.beginCell;
+    const TonClient = ton.TonClient;
+
+    // Find the buyer's USDT wallet contract.
+    const buyerJettonWallet =
+        await resolveJettonWalletAddress(
+            TonClient,
+            Address,
+            beginCell,
+            buyerAddress
+        );
+
+    // Convert USDT to its smallest units.
+    const jettonAmount = BigInt(
+        Math.ceil(usdtAmount * (10 ** USDT_DECIMALS))
+    );
+
+    // Create a payment comment for the order.
+    const forwardPayload = beginCell()
+        .storeUint(0, 32)
+        .storeStringTail(orderReference)
+        .endCell();
+
+    // Build the official Jetton transfer message.
+    const transferBody = beginCell()
+        .storeUint(0x0f8a7ea5, 32)
+        .storeUint(BigInt(Date.now()), 64)
+        .storeCoins(jettonAmount)
+        .storeAddress(Address.parse(RECEIVING_WALLET))
+        .storeAddress(Address.parse(buyerAddress))
+        .storeBit(0)
+        .storeCoins(1n)
+        .storeBit(1)
+        .storeRef(forwardPayload)
+        .endCell()
+        .toBoc()
+        .toString("base64");
+
+    // Ask the buyer's wallet to approve and send.
+    const result = await tonConnectUI.sendTransaction({
+
+        validUntil: Math.floor(Date.now() / 1000) + 600,
+
+        network: TON_NETWORK,
+
+        messages: [
+            {
+                address: buyerJettonWallet,
+
+                // TON attached for Jetton wallet execution.
+                amount: "50000000",
+
+                payload: transferBody
+            }
+        ]
+
+    });
+
+    console.log(
+        "TON Connect transaction response:",
+        result
+    );
+
+    showMessage(
+        "Your wallet has returned a transaction response for order " +
+        orderReference +
+        ". Check the wallet and blockchain transaction status before considering this order paid."
+    );
+
+}
+
+
+// ======================================
+// TON CONNECT
+// ======================================
+
+function initializeTONConnect() {
+
+    if (!window.TON_CONNECT_UI) {
+        console.error("TON Connect library is unavailable.");
+        showMessage("Wallet connection could not load. Please reload.");
+        return;
+    }
 
     try {
 
-        if (!tonConnectUI) {
+        tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
 
-            alert(
-                "Please connect your TON wallet first."
-            );
+            manifestUrl: TON_CONNECT_MANIFEST,
 
-            checkoutInProgress =
-                false;
+            buttonRootId: "ton-connect"
 
-            return;
-        }
+        });
 
+        tonConnectUI.onStatusChange((wallet) => {
 
-        const wallet =
-            tonConnectUI.wallet;
+            console.log("Wallet status:", wallet);
 
+            let status = document.getElementById("walletStatus");
 
-        if (!wallet) {
+            if (!status) {
 
-            alert(
-                "Please connect your TON wallet first."
-            );
+                status = document.createElement("div");
 
-            checkoutInProgress =
-                false;
+                status.id = "walletStatus";
 
-            return;
-        }
+                document
+                    .getElementById("ton-connect")
+                    ?.appendChild(status);
 
+            }
 
-        /*
-         * Actual USDT transaction will be
-         * added after verifying the current
-         * TON Connect Jetton transaction
-         * format.
-         */
+            if (wallet) {
 
-        alert(
-            "Your wallet is connected.\n\n" +
+                status.textContent =
+                    "Wallet connected: " +
+                    wallet.account.address.slice(0, 8) +
+                    "..." +
+                    wallet.account.address.slice(-6);
 
-            "USDT payment amount: " +
+            } else {
 
-            usdtAmount.toFixed(2) +
+                status.textContent = "Wallet not connected.";
 
-            " USDT"
-        );
+            }
 
-
-        checkoutInProgress =
-            false;
-
+        });
 
     } catch (error) {
 
-        console.error(
-            "Wallet payment error:",
-            error
-        );
+        console.error("TON Connect initialization failed:", error);
 
-        alert(
-            "Unable to start wallet payment."
-        );
+        showMessage("Could not initialize TON Connect.");
 
-        checkoutInProgress =
-            false;
     }
 }
 
 
 // ======================================
-// PAGE INITIALIZATION
+// INITIALIZE APP
 // ======================================
 
-document.addEventListener(
-    "DOMContentLoaded",
-    function() {
+document.addEventListener("DOMContentLoaded", () => {
 
-        console.log(
-            "Phillip Store loaded."
-        );
+    document
+        .getElementById("cartButton")
+        ?.addEventListener("click", openCart);
 
+    document
+        .getElementById("closeCartButton")
+        ?.addEventListener("click", closeCart);
 
-        // ----------------------------------
-        // INITIAL CART
-        // ----------------------------------
+    document
+        .getElementById("checkoutButton")
+        ?.addEventListener("click", checkout);
 
-        updateCart();
+    document
+        .getElementById("cartItems")
+        ?.addEventListener("click", (event) => {
 
+            const button = event.target.closest("[data-remove]");
 
-        // ----------------------------------
-        // CART BUTTON
-        // ----------------------------------
+            if (!button) return;
 
-        const cartButton =
-            document.getElementById(
-                "cartButton"
+            removeFromCart(
+                Number(button.dataset.remove)
             );
 
+        });
 
-        if (cartButton) {
+    updateCart();
 
-            cartButton.addEventListener(
-                "click",
-                function(event) {
+    // Initialize TON Connect after cart setup.
+    initializeTONConnect();
 
-                    event.preventDefault();
-
-                    console.log(
-                        "Cart button clicked."
-                    );
-
-                    openCart();
-
-                }
-            );
-
-        } else {
-
-            console.error(
-                "Cart button not found."
-            );
-        }
+});
 
 
-        // ----------------------------------
-        // CLOSE CART
-        // ----------------------------------
-
-        const closeCartButton =
-            document.getElementById(
-                "closeCartButton"
-            );
-
-
-        if (closeCartButton) {
-
-            closeCartButton.addEventListener(
-                "click",
-                function(event) {
-
-                    event.preventDefault();
-
-                    closeCart();
-
-                }
-            );
-
-        } else {
-
-            console.error(
-                "Close cart button not found."
-            );
-        }
-
-
-        // ----------------------------------
-        // CHECKOUT BUTTON
-        // ----------------------------------
-
-        const checkoutButton =
-            document.getElementById(
-                "checkoutButton"
-            );
-
-
-        if (checkoutButton) {
-
-            checkoutButton.addEventListener(
-                "click",
-                function(event) {
-
-                    event.preventDefault();
-
-                    checkout();
-
-                }
-            );
-
-        } else {
-
-            console.error(
-                "Checkout button not found."
-            );
-        }
-
-
-        // ----------------------------------
-        // TON CONNECT LAST
-        // ----------------------------------
-
-        initializeTONConnect();
-
-    }
-);
+// Keep inline HTML onclick handlers working.
+window.addToCart = addToCart;
