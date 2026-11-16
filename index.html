@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,8 +9,13 @@
 
     <title>Phillip Store</title>
 
+    <!-- Telegram Mini App -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
+    <!-- TON Connect UI -->
+    <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
+
+    <!-- App stylesheet -->
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -34,6 +40,9 @@
         <section class="welcome">
             <h1>Welcome 👋</h1>
             <p>Choose a product below.</p>
+
+            <!-- TON wallet connection button -->
+            <div id="ton-connect"></div>
         </section>
 
 
@@ -131,6 +140,7 @@
 
 </div>
 
+<!-- App JavaScript -->
 <script src="app.js"></script>
 
 </body>
