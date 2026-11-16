@@ -15,14 +15,6 @@ let checkoutInProgress = false;
 
 let rateRequestId = 0;
 
-let cachedUSDTPerUSD = null;
-
-let cachedRateTime = 0;
-
-
-// Cache exchange rate for 5 minutes
-const RATE_CACHE_TIME = 5 * 60 * 1000;
-
 
 // ======================================
 // TELEGRAM
@@ -42,7 +34,8 @@ if (telegram) {
 
 function openCart() {
 
-    const cartSection = document.getElementById("cart");
+    const cartSection =
+        document.getElementById("cart");
 
     if (!cartSection) {
         console.error("Cart element not found.");
@@ -61,7 +54,8 @@ function openCart() {
 
 function closeCart() {
 
-    const cartSection = document.getElementById("cart");
+    const cartSection =
+        document.getElementById("cart");
 
     if (!cartSection) {
         console.error("Cart element not found.");
@@ -80,13 +74,32 @@ function closeCart() {
 
 function addToCart(name, price) {
 
+    const numericPrice = Number(price);
+
+    if (
+        !Number.isFinite(numericPrice) ||
+        numericPrice <= 0
+    ) {
+        console.error(
+            "Invalid product price:",
+            price
+        );
+
+        return;
+    }
+
     cart.push({
         name: name,
-        price: price
+        price: numericPrice
     });
 
     updateCart();
 
+    console.log(
+        "Added:",
+        name,
+        numericPrice
+    );
 }
 
 
@@ -96,10 +109,16 @@ function addToCart(name, price) {
 
 function removeFromCart(index) {
 
+    if (
+        index < 0 ||
+        index >= cart.length
+    ) {
+        return;
+    }
+
     cart.splice(index, 1);
 
     updateCart();
-
 }
 
 
@@ -109,24 +128,42 @@ function removeFromCart(index) {
 
 function updateCart() {
 
-    const cartItems = document.getElementById("cartItems");
+    const cartItems =
+        document.getElementById("cartItems");
 
-    const cartCount = document.getElementById("cartCount");
+    const cartCount =
+        document.getElementById("cartCount");
 
-    const cartTotal = document.getElementById("cartTotal");
+    const cartTotal =
+        document.getElementById("cartTotal");
 
 
-    if (!cartItems || !cartCount || !cartTotal) {
-        console.error("Cart elements missing.");
+    if (
+        !cartItems ||
+        !cartCount ||
+        !cartTotal
+    ) {
+
+        console.error(
+            "Cart elements missing."
+        );
+
         return;
     }
 
 
-    // Count
-    cartCount.textContent = cart.length;
+    // ----------------------------------
+    // CART COUNT
+    // ----------------------------------
+
+    cartCount.textContent =
+        cart.length;
 
 
-    // Empty cart
+    // ----------------------------------
+    // EMPTY CART
+    // ----------------------------------
+
     if (cart.length === 0) {
 
         cartItems.innerHTML = `
@@ -139,13 +176,17 @@ function updateCart() {
             </p>
         `;
 
-        cartTotal.textContent = "0 UGX";
+        cartTotal.textContent =
+            "0 UGX";
 
         return;
     }
 
 
-    // Items
+    // ----------------------------------
+    // CART ITEMS
+    // ----------------------------------
+
     cartItems.innerHTML = "";
 
 
@@ -154,85 +195,111 @@ function updateCart() {
 
     cart.forEach(function(item, index) {
 
-        total += item.price;
+        total += Number(item.price);
 
 
-        const itemElement = document.createElement("div");
+        const itemElement =
+            document.createElement("div");
 
-        itemElement.className = "cart-item";
+
+        itemElement.className =
+            "cart-item";
 
 
         itemElement.innerHTML = `
             <div>
+
                 <div class="cart-item-name">
                     ${item.name}
                 </div>
 
                 <div class="cart-item-price">
-                    ${item.price.toLocaleString()} UGX
+                    ${Number(item.price).toLocaleString()} UGX
                 </div>
+
             </div>
 
             <button
                 class="remove-button"
-                type="button"
-                data-index="${index}">
+                type="button">
+
                 Remove
+
             </button>
         `;
 
 
         const removeButton =
-            itemElement.querySelector(".remove-button");
+            itemElement.querySelector(
+                ".remove-button"
+            );
 
 
-        removeButton.addEventListener("click", function() {
+        removeButton.addEventListener(
+            "click",
+            function() {
 
-            removeFromCart(index);
+                removeFromCart(index);
 
-        });
+            }
+        );
 
 
-        cartItems.appendChild(itemElement);
+        cartItems.appendChild(
+            itemElement
+        );
 
     });
 
 
+    // ----------------------------------
+    // TOTAL
+    // ----------------------------------
+
     cartTotal.textContent =
-        total.toLocaleString() + " UGX";
+        total.toLocaleString() +
+        " UGX";
 
+
+    console.log(
+        "Cart total:",
+        total,
+        "UGX"
+    );
 }
 
 
 // ======================================
-// USD / USDT RATE
+// UGX → USDT
 // ======================================
 
-async function getUSDTPerUSD() {
+async function convertUGXToUSDT(
+    ugxAmount
+) {
 
-    const now = Date.now();
-
-
-    if (
-        cachedUSDTPerUSD !== null &&
-        now - cachedRateTime < RATE_CACHE_TIME
-    ) {
-        return cachedUSDTPerUSD;
-    }
+    const requestId =
+        ++rateRequestId;
 
 
     try {
 
         const response =
-            await fetch("https://open.er-api.com/v6/latest/USD");
+            await fetch(
+                "https://open.er-api.com/v6/latest/USD"
+            );
 
 
         if (!response.ok) {
-            throw new Error("Exchange rate request failed.");
+
+            throw new Error(
+                "Exchange rate request failed."
+            );
+
         }
 
 
-        const data = await response.json();
+        const data =
+            await response.json();
 
 
         if (
@@ -240,71 +307,11 @@ async function getUSDTPerUSD() {
             !data.rates ||
             !data.rates.UGX
         ) {
-            throw new Error("UGX exchange rate unavailable.");
-        }
 
+            throw new Error(
+                "UGX exchange rate unavailable."
+            );
 
-        const usdToUGX = Number(data.rates.UGX);
-
-
-        if (!Number.isFinite(usdToUGX) || usdToUGX <= 0) {
-            throw new Error("Invalid UGX exchange rate.");
-        }
-
-
-        // USDT is approximately 1 USD
-        const usdtPerUSD = 1;
-
-
-        cachedUSDTPerUSD = usdtPerUSD;
-
-        cachedRateTime = now;
-
-
-        return usdtPerUSD;
-
-    } catch (error) {
-
-        console.error(
-            "Exchange rate error:",
-            error
-        );
-
-        return 1;
-    }
-
-}
-
-
-// ======================================
-// UGX TO USDT
-// ======================================
-
-async function convertUGXToUSDT(ugxAmount) {
-
-    const requestId = ++rateRequestId;
-
-
-    try {
-
-        const response =
-            await fetch("https://open.er-api.com/v6/latest/USD");
-
-
-        if (!response.ok) {
-            throw new Error("Exchange rate request failed.");
-        }
-
-
-        const data = await response.json();
-
-
-        if (
-            !data ||
-            !data.rates ||
-            !data.rates.UGX
-        ) {
-            throw new Error("UGX rate unavailable.");
         }
 
 
@@ -316,14 +323,22 @@ async function convertUGXToUSDT(ugxAmount) {
             !Number.isFinite(usdToUGX) ||
             usdToUGX <= 0
         ) {
-            throw new Error("Invalid exchange rate.");
+
+            throw new Error(
+                "Invalid UGX exchange rate."
+            );
+
         }
 
 
+        // Convert UGX → USD
         const usdAmount =
-            ugxAmount / usdToUGX;
+            Number(ugxAmount) /
+            usdToUGX;
 
 
+        // USDT is treated as approximately
+        // equal to USD for the estimate.
         const usdtAmount =
             usdAmount;
 
@@ -335,16 +350,16 @@ async function convertUGXToUSDT(ugxAmount) {
 
         return usdtAmount;
 
+
     } catch (error) {
 
         console.error(
-            "UGX to USDT conversion failed:",
+            "UGX → USDT conversion failed:",
             error
         );
 
         return null;
     }
-
 }
 
 
@@ -357,7 +372,8 @@ function initializeTONConnect() {
     try {
 
         if (
-            typeof TON_CONNECT_UI === "undefined"
+            typeof TON_CONNECT_UI ===
+            "undefined"
         ) {
 
             console.warn(
@@ -393,7 +409,6 @@ function initializeTONConnect() {
         );
 
     }
-
 }
 
 
@@ -410,7 +425,9 @@ async function checkout() {
 
     if (cart.length === 0) {
 
-        alert("Your cart is empty.");
+        alert(
+            "Your cart is empty."
+        );
 
         return;
     }
@@ -421,18 +438,36 @@ async function checkout() {
 
     try {
 
+        // ----------------------------------
+        // CALCULATE TOTAL FROM CART
+        // ----------------------------------
+
         let totalUGX = 0;
 
 
         cart.forEach(function(item) {
 
-            totalUGX += item.price;
+            totalUGX +=
+                Number(item.price);
 
         });
 
 
+        console.log(
+            "Checkout total:",
+            totalUGX,
+            "UGX"
+        );
+
+
+        // ----------------------------------
+        // CONVERT TO USDT
+        // ----------------------------------
+
         const usdtAmount =
-            await convertUGXToUSDT(totalUGX);
+            await convertUGXToUSDT(
+                totalUGX
+            );
 
 
         if (
@@ -454,51 +489,91 @@ async function checkout() {
             usdtAmount.toFixed(2);
 
 
+        // ----------------------------------
+        // CHECKOUT MESSAGE
+        // ----------------------------------
+
         const message =
             "Order total: " +
             totalUGX.toLocaleString() +
             " UGX\n\n" +
+
             "Estimated payment: " +
             formattedUSDT +
             " USDT";
 
 
+        console.log(
+            "Checkout:",
+            message
+        );
+
+
+        // ----------------------------------
+        // TELEGRAM POPUP
+        // ----------------------------------
+
         if (telegram) {
 
-            telegram.showPopup({
+            telegram.showPopup(
 
-                title: "Checkout",
+                {
 
-                message: message,
+                    title:
+                        "Checkout",
 
-                buttons: [
-                    {
-                        id: "continue",
-                        type: "default",
-                        text: "Continue"
-                    },
-                    {
-                        id: "cancel",
-                        type: "cancel",
-                        text: "Cancel"
+                    message:
+                        message,
+
+                    buttons: [
+
+                        {
+                            id:
+                                "continue",
+
+                            type:
+                                "default",
+
+                            text:
+                                "Continue"
+                        },
+
+                        {
+                            id:
+                                "cancel",
+
+                            type:
+                                "cancel",
+
+                            text:
+                                "Cancel"
+                        }
+
+                    ]
+
+                },
+
+                function(buttonId) {
+
+                    if (
+                        buttonId ===
+                        "continue"
+                    ) {
+
+                        startUSDTWalletPayment(
+                            usdtAmount
+                        );
+
+                    } else {
+
+                        checkoutInProgress =
+                            false;
+
                     }
-                ]
-
-            }, function(buttonId) {
-
-                if (buttonId === "continue") {
-
-                    startUSDTWalletPayment(
-                        usdtAmount
-                    );
-
-                } else {
-
-                    checkoutInProgress = false;
 
                 }
 
-            });
+            );
 
         } else {
 
@@ -518,7 +593,8 @@ async function checkout() {
             }
 
 
-            checkoutInProgress = false;
+            checkoutInProgress =
+                false;
 
         }
 
@@ -534,10 +610,9 @@ async function checkout() {
             "Checkout could not be started."
         );
 
-        checkoutInProgress = false;
-
+        checkoutInProgress =
+            false;
     }
-
 }
 
 
@@ -557,7 +632,8 @@ async function startUSDTWalletPayment(
                 "Please connect your TON wallet first."
             );
 
-            checkoutInProgress = false;
+            checkoutInProgress =
+                false;
 
             return;
         }
@@ -573,27 +649,33 @@ async function startUSDTWalletPayment(
                 "Please connect your TON wallet first."
             );
 
-            checkoutInProgress = false;
+            checkoutInProgress =
+                false;
 
             return;
         }
 
 
         /*
-         * Payment transaction will be completed
-         * after the TON USDT transaction format
-         * is verified.
+         * Actual USDT transaction will be
+         * added after verifying the current
+         * TON Connect Jetton transaction
+         * format.
          */
 
         alert(
             "Your wallet is connected.\n\n" +
+
             "USDT payment amount: " +
+
             usdtAmount.toFixed(2) +
+
             " USDT"
         );
 
 
-        checkoutInProgress = false;
+        checkoutInProgress =
+            false;
 
 
     } catch (error) {
@@ -607,10 +689,9 @@ async function startUSDTWalletPayment(
             "Unable to start wallet payment."
         );
 
-        checkoutInProgress = false;
-
+        checkoutInProgress =
+            false;
     }
-
 }
 
 
@@ -628,11 +709,15 @@ document.addEventListener(
 
 
         // ----------------------------------
-        // CART
+        // INITIAL CART
         // ----------------------------------
 
         updateCart();
 
+
+        // ----------------------------------
+        // CART BUTTON
+        // ----------------------------------
 
         const cartButton =
             document.getElementById(
@@ -662,7 +747,6 @@ document.addEventListener(
             console.error(
                 "Cart button not found."
             );
-
         }
 
 
@@ -694,12 +778,11 @@ document.addEventListener(
             console.error(
                 "Close cart button not found."
             );
-
         }
 
 
         // ----------------------------------
-        // CHECKOUT
+        // CHECKOUT BUTTON
         // ----------------------------------
 
         const checkoutButton =
@@ -726,18 +809,12 @@ document.addEventListener(
             console.error(
                 "Checkout button not found."
             );
-
         }
 
 
         // ----------------------------------
         // TON CONNECT LAST
         // ----------------------------------
-
-        // Important:
-        // TON Connect is initialized AFTER
-        // the cart listeners so it cannot
-        // prevent the cart from working.
 
         initializeTONConnect();
 
