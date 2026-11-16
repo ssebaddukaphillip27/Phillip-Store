@@ -175,25 +175,46 @@ function initializeTONConnect() {
 
 
 /*
+ * Normalize product names
+ */
+
+function normalizeProductName(name) {
+
+    return String(name)
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, " ");
+}
+
+
+/*
  * Add product to cart
  * Each product can only appear once
  */
 
 function addToCart(name, price) {
 
-    // Check whether product already exists
-    const existingProduct = cart.find(
-        item => item.name === name
+    const productName = normalizeProductName(name);
+
+    // Check for an existing product
+    const existingProduct = cart.find(item =>
+        normalizeProductName(item.name) === productName
     );
 
     if (existingProduct) {
 
-        showMessage(name + " is already in your cart.");
+        showMessage(
+            existingProduct.name + " is already in your cart."
+        );
+
+        if (telegram) {
+            telegram.HapticFeedback?.notificationOccurred("warning");
+        }
 
         return;
     }
 
-    // Add product only once
+    // Add product once
     cart.push({
         name: name,
         price: price
