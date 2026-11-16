@@ -3,6 +3,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+
     <meta name="viewport"
           content="width=device-width, initial-scale=1.0,
                    maximum-scale=1.0, user-scalable=no">
@@ -16,7 +17,7 @@
     <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
 
     <!-- App stylesheet -->
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=6">
 </head>
 
 <body>
@@ -24,114 +25,179 @@
 <div class="app">
 
     <header class="topbar">
+
         <div>
             <div class="brand">Phillip Store</div>
             <div class="subtitle">Simple • Secure • Fast</div>
         </div>
 
-        <button id="cartButton" class="cart-button">
+        <button
+            id="cartButton"
+            class="cart-button"
+            type="button">
+
             🛒 <span id="cartCount">0</span>
+
         </button>
+
     </header>
 
 
     <main>
 
+        <!-- Welcome section -->
         <section class="welcome">
+
             <h1>Welcome 👋</h1>
+
             <p>Choose a product below.</p>
 
-            <!-- TON wallet connection button -->
+            <!-- TON wallet connection -->
             <div id="ton-connect"></div>
+
         </section>
 
 
+        <!-- Products section -->
         <section id="products" class="products">
 
+            <!-- T-Shirt -->
             <article class="product">
+
                 <div class="product-image">👕</div>
 
                 <div class="product-info">
+
                     <h2>T-Shirt</h2>
+
                     <p>Comfortable everyday T-shirt.</p>
 
                     <div class="product-bottom">
+
                         <strong>35,000 UGX</strong>
 
                         <button
                             class="add-button"
+                            type="button"
                             onclick="addToCart('T-Shirt', 35000)">
+
                             Add
+
                         </button>
+
                     </div>
+
                 </div>
+
             </article>
 
 
+            <!-- Headphones -->
             <article class="product">
+
                 <div class="product-image">🎧</div>
 
                 <div class="product-info">
+
                     <h2>Headphones</h2>
+
                     <p>Wireless headphones for music.</p>
 
                     <div class="product-bottom">
+
                         <strong>80,000 UGX</strong>
 
                         <button
                             class="add-button"
+                            type="button"
                             onclick="addToCart('Headphones', 80000)">
+
                             Add
+
                         </button>
+
                     </div>
+
                 </div>
+
             </article>
 
 
+            <!-- Phone Case -->
             <article class="product">
+
                 <div class="product-image">📱</div>
 
                 <div class="product-info">
+
                     <h2>Phone Case</h2>
+
                     <p>Protective phone case.</p>
 
                     <div class="product-bottom">
+
                         <strong>20,000 UGX</strong>
 
                         <button
                             class="add-button"
+                            type="button"
                             onclick="addToCart('Phone Case', 20000)">
+
                             Add
+
                         </button>
+
                     </div>
+
                 </div>
+
             </article>
 
         </section>
 
 
+        <!-- Shopping cart -->
         <section id="cart" class="cart hidden">
 
             <div class="cart-header">
+
                 <h2>Your Cart</h2>
 
-                <button onclick="closeCart()" class="close-button">
+                <button
+                    onclick="closeCart()"
+                    class="close-button"
+                    type="button">
+
                     ✕
+
                 </button>
+
             </div>
 
+
+            <!-- Cart products -->
             <div id="cartItems"></div>
 
+
+            <!-- Cart total -->
             <div class="cart-total">
+
                 <span>Total</span>
+
                 <strong id="cartTotal">0 UGX</strong>
+
             </div>
 
+
+            <!-- Checkout -->
             <button
                 id="checkoutButton"
                 class="checkout-button"
+                type="button"
                 onclick="checkout()">
+
                 Continue to Checkout
+
             </button>
 
         </section>
@@ -140,8 +206,9 @@
 
 </div>
 
+
 <!-- App JavaScript -->
-<script src="app.js"></script>
+<script src="app.js?v=6"></script>
 
 </body>
 </html>
