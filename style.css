@@ -380,3 +380,28 @@ button {
         padding: 8px 11px;
     }
 }
+
+/* TON CONNECT WALLET */
+
+#ton-connect {
+    display: flex !important;
+    justify-content: flex-start;
+    align-items: center;
+    min-height: 48px;
+    margin-top: 18px;
+    width: 100%;
+}
+
+#ton-connect button {
+    display: inline-flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+#walletStatus {
+    display: block;
+    margin-top: 10px;
+    font-size: 13px;
+    color: var(--muted);
+    overflow-wrap: anywhere;
+}
