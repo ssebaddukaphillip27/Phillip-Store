@@ -858,16 +858,29 @@ function openCart() {
 
     const cartSection =
         document.getElementById(
-            "cartSection"
+            "cart"
         );
 
 
-    if (cartSection) {
+    if (!cartSection) {
 
-        cartSection.style.display =
-            "block";
+        console.error(
+            "Cart element not found."
+        );
+
+        return;
 
     }
+
+
+    cartSection.classList.remove(
+        "hidden"
+    );
+
+
+    console.log(
+        "Cart opened."
+    );
 
 }
 
@@ -880,16 +893,29 @@ function closeCart() {
 
     const cartSection =
         document.getElementById(
-            "cartSection"
+            "cart"
         );
 
 
-    if (cartSection) {
+    if (!cartSection) {
 
-        cartSection.style.display =
-            "none";
+        console.error(
+            "Cart element not found."
+        );
+
+        return;
 
     }
+
+
+    cartSection.classList.add(
+        "hidden"
+    );
+
+
+    console.log(
+        "Cart closed."
+    );
 
 }
 
@@ -1083,6 +1109,11 @@ async function checkout() {
                             estimatedUSDT
                         );
 
+                    } else {
+
+                        checkoutInProgress =
+                            false;
+
                     }
 
                 }
@@ -1104,6 +1135,11 @@ async function checkout() {
                     usdtUnits,
                     estimatedUSDT
                 );
+
+            } else {
+
+                checkoutInProgress =
+                    false;
 
             }
 
@@ -1287,10 +1323,8 @@ async function sendUSDTPayment(
 
         if (
             error &&
-            (
-                error.code ===
-                300
-            )
+            error.code ===
+            300
         ) {
 
             showMessage(
